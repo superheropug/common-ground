@@ -27,5 +27,15 @@ services:
       SPRING_DATASOURCE_PASSWORD: secret
       SERVER_PORT: 5000
 
+  frontend:
+    build:
+      context: ./Website
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
 volumes:
   pgdata:

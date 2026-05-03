@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import CommentVote from "../components/CommentVote.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -12,7 +13,6 @@ const comments = ref([]);
 
 const newComment = ref("");
 const selectedCategories = ref([]);
-
 const availableCategories = ref([]);
 
 function getToken() {
@@ -44,7 +44,9 @@ async function loadPost() {
 }
 
 async function loadComments() {
-  const res = await fetch(`http://localhost:5000/api/post/${postId}/comments`);
+  const res = await fetch(
+    `http://localhost:5000/api/post/${postId}/comments`
+  );
   comments.value = await res.json();
 }
 
@@ -54,9 +56,7 @@ async function loadCategories() {
 }
 
 async function submitComment() {
-  const trimmed = newComment.value.trim();
-
-  if (!trimmed) return;
+  if (!newComment.value.trim()) return;
 
   const res = await fetch("http://localhost:5000/api/comments", {
     method: "POST",
@@ -65,7 +65,7 @@ async function submitComment() {
       Authorization: getToken(),
     },
     body: JSON.stringify({
-      text: trimmed,
+      text: newComment.value,
       postId: postId,
       categories: selectedCategories.value,
     }),
@@ -97,7 +97,7 @@ onMounted(async () => {
 
     <div class="categories">
       <span v-for="c in post.categories" :key="c.name" class="chip">
-        {{ c.fancyName ?? c.name }}
+        {{ c.fancyName || c.name }}
       </span>
     </div>
 
@@ -107,22 +107,32 @@ onMounted(async () => {
     <h2>Comments</h2>
 
     <div v-for="c in comments" :key="c.id" class="comment">
-      <div class="meta">
-        {{ formatTime(c.postTime) }}
-      </div>
 
-      <p>{{ c.content }}</p>
+      <!-- VOTE COLUMN -->
+      <CommentVote :commentId="c.id" />
 
-      <div class="categories">
-        <span v-for="cat in c.categories" :key="cat.name" class="chip">
-          {{ cat.fancyName ?? cat.name }}
-        </span>
+      <!-- CONTENT -->
+      <div class="comment-body">
+        <div class="meta">
+          {{ formatTime(c.postTime) }}
+        </div>
+
+        <p class="text">{{ c.content }}</p>
+
+        <div class="categories">
+          <span v-for="cat in c.categories" :key="cat.name" class="chip">
+            {{ cat.fancyName || cat.name }}
+          </span>
+        </div>
       </div>
     </div>
 
     <!-- COMMENT FORM -->
     <div v-if="getToken()" class="form">
-      <textarea v-model="newComment" placeholder="Write a comment..." />
+      <textarea
+        v-model="newComment"
+        placeholder="Write a comment..."
+      />
 
       <div class="category-select">
         <label v-for="c in availableCategories" :key="c.name">
@@ -131,13 +141,13 @@ onMounted(async () => {
             :value="c.name"
             v-model="selectedCategories"
           />
-          {{ c.fancyName ?? c.name }}
+          {{ c.fancyName || c.name }}
         </label>
       </div>
 
       <button
-        @click="submitComment"
         :disabled="!newComment.trim()"
+        @click="submitComment"
       >
         Post Comment
       </button>
@@ -175,10 +185,20 @@ onMounted(async () => {
 }
 
 .comment {
+  display: flex;
+  gap: 0.75rem;
   padding: 0.75rem;
   margin: 0.5rem 0;
   background: #1f1f1f;
   border-radius: 10px;
+}
+
+.comment-body {
+  flex: 1;
+}
+
+.text {
+  margin: 0.3rem 0;
 }
 
 .form {
@@ -189,32 +209,37 @@ onMounted(async () => {
 }
 
 textarea {
-  min-height: 80px;
-  padding: 10px;
+  min-height: 90px;
+  padding: 0.5rem;
   border-radius: 8px;
-  border: 1px solid #444;
-  background: #1f1f1f;
+  border: 1px solid #333;
+  background: #111;
   color: white;
+  resize: vertical;
+}
+
+button {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+button:hover {
+  background: #555;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .category-select {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-}
-
-button {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: none;
-  background: #3b82f6;
-  color: white;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .login-hint {
