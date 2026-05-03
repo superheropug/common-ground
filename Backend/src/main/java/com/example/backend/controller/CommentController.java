@@ -1,26 +1,17 @@
 package com.example.backend.controller;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.backend.Services.JWTService;
-import com.example.backend.model.Comment;
-import com.example.backend.model.CommentResponse;
-import com.example.backend.model.CommentVote;
-import com.example.backend.model.User;
-import com.example.backend.repository.CommentRepository;
-import com.example.backend.repository.CommentVoteRepository;
-import com.example.backend.repository.PostRepository;
-import com.example.backend.repository.UserRepository;
+import com.example.backend.model.*;
+import com.example.backend.repository.*;
 
 @RestController
 public class CommentController {
@@ -29,15 +20,18 @@ public class CommentController {
     private final PostRepository postRepository;
     private final CommentVoteRepository commentVoteRepository;
     private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
 
     public CommentController(CommentRepository commentRepository,
                              PostRepository postRepository,
                              CommentVoteRepository commentVoteRepository,
-                             UserRepository userRepository) {
+                             UserRepository userRepository,
+                             CategoryRepository categoryRepository) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.commentVoteRepository = commentVoteRepository;
         this.userRepository = userRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     private String extractToken(String authorization) {
@@ -93,7 +87,7 @@ public class CommentController {
     }
 
     // -----------------------------
-    // CREATE COMMENT (FIX YOU NEEDED)
+    // CREATE COMMENT (FIXED)
     // -----------------------------
     @PostMapping("/comments")
     public ResponseEntity<?> createComment(
@@ -118,22 +112,49 @@ public class CommentController {
 
             Comment comment = new Comment();
             comment.setContent(text);
-            comment.setUsername(user.getUsername()); // adjust if your entity differs
+            comment.setUsername(user.getUsername());
             comment.setPost(postRepository.findById(postId)
                     .orElseThrow(() -> new RuntimeException("Post not found")));
+
+            // -----------------------------
+            // CATEGORY HANDLING (NEW)
+            // -----------------------------
+            if (body.get("categories") != null) {
+
+                @SuppressWarnings("unchecked")
+                List<String> requested = (List<String>) body.get("categories");
+
+                List<String> missing = requested.stream()
+                        .filter(name -> !categoryRepository.existsById(name))
+                        .toList();
+
+                if (!missing.isEmpty()) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(Map.of(
+                                    "error", "Invalid categories",
+                                    "missingCategories", missing
+                            ));
+                }
+
+                Set<Category> categorySet = requested.stream()
+                        .map(name -> categoryRepository.findById(name).get())
+                        .collect(Collectors.toSet());
+
+                comment.setCategories(categorySet);
+            }
 
             commentRepository.save(comment);
 
             return ResponseEntity.ok(Map.of("status", "created"));
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", "invalid request"));
         }
     }
 
     // -----------------------------
-    // VOTE COMMENT
+    // VOTE COMMENT (UNCHANGED)
     // -----------------------------
     @PostMapping("/comments/{commentId}/vote")
     public ResponseEntity<?> voteComment(

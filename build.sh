@@ -27,4 +27,6 @@ cp deploy-compose.yml build/docker-compose.yml
 
 cp nginx.conf build/nginx.conf
 
+cp database.sql build/database.sql
+
 echo "✅ Done: $OUT_FILE"
