@@ -1,8 +1,6 @@
 package com.example.backend.controller;
 
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,18 +13,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.backend.Services.JWTService;
-import com.example.backend.model.Category;
 import com.example.backend.model.Comment;
-import com.example.backend.model.CommentRequest;
 import com.example.backend.model.CommentResponse;
 import com.example.backend.model.CommentVote;
-import com.example.backend.model.CommentVote.VoteType;
+import com.example.backend.model.User;
 import com.example.backend.repository.CommentRepository;
 import com.example.backend.repository.CommentVoteRepository;
 import com.example.backend.repository.PostRepository;
 import com.example.backend.repository.UserRepository;
-
-import io.jsonwebtoken.JwtException;
 
 @RestController
 @RequestMapping("/api")
@@ -52,7 +46,7 @@ public class CommentController {
     }
 
     // -----------------------------
-    // GET COMMENTS BY POST
+    // GET COMMENTS
     // -----------------------------
     @GetMapping("/post/{postId}/comments")
     public ResponseEntity<?> getCommentsByPostId(
@@ -67,14 +61,14 @@ public class CommentController {
             try {
                 String username = JWTService.getUsernameFromJWT(authorization);
                 userId = userRepository.findByUsername(username)
-                        .map(u -> u.getId())
+                        .map(User::getId)
                         .orElse(null);
             } catch (Exception ignored) {}
         }
 
         Long finalUserId = userId;
 
-        var response = comments.stream().map(comment -> {
+        var safe = comments.stream().map(comment -> {
 
             CommentResponse dto = new CommentResponse();
 
@@ -82,17 +76,10 @@ public class CommentController {
             dto.content = comment.getContent();
             dto.postTime = comment.getPostTime();
             dto.categories = comment.getCategories();
-            dto.username = null;
 
-            // -----------------------------
-            // SCORE (CLEAN DB QUERY)
-            // -----------------------------
-            dto.voteScore =
-                    commentVoteRepository.getScoreByCommentId(comment.getId());
+            // ✅ FIX: use repository instead of streaming entire table like a maniac
+            dto.voteScore = commentVoteRepository.getScoreByCommentId(comment.getId());
 
-            // -----------------------------
-            // USER VOTE STATE
-            // -----------------------------
             if (finalUserId != null) {
                 dto.userVote = commentVoteRepository
                         .findByCommentIdAndUserId(comment.getId(), finalUserId)
@@ -105,52 +92,7 @@ public class CommentController {
             return dto;
         }).toList();
 
-        return ResponseEntity.ok(response);
-    }
-
-    // -----------------------------
-    // CREATE COMMENT
-    // -----------------------------
-    @PostMapping("/comments")
-    public ResponseEntity<?> createComment(
-            @RequestBody CommentRequest commentRequest,
-            @RequestHeader("Authorization") String authorization) {
-
-        String token = extractToken(authorization);
-
-        if (token == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Authorization required"));
-        }
-
-        try {
-            String username = JWTService.getUsernameFromJWT(token);
-
-            Comment comment = new Comment();
-            comment.setContent(commentRequest.getText());
-            comment.setUsername(username);
-
-            if (commentRequest.getCategories() != null) {
-                Set<Category> categorySet = commentRequest.getCategories().stream()
-                        .map(name -> new Category(name, name))
-                        .collect(Collectors.toSet());
-
-                comment.setCategories(categorySet);
-            }
-
-            comment.setPost(
-                    postRepository.findById(commentRequest.getPostId())
-                            .orElseThrow(() -> new RuntimeException("Post not found"))
-            );
-
-            Comment saved = commentRepository.save(comment);
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
-
-        } catch (JwtException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "invalid token"));
-        }
+        return ResponseEntity.ok(safe);
     }
 
     // -----------------------------
@@ -161,52 +103,50 @@ public class CommentController {
             @PathVariable Long commentId,
             @RequestBody Map<String, String> body,
             @RequestHeader("Authorization") String authorization) {
-            
+
         String token = extractToken(authorization);
-            
+
         if (token == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Authorization required"));
         }
-    
+
         try {
             String username = JWTService.getUsernameFromJWT(token);
-        
+
             Long userId = userRepository.findByUsername(username)
                     .orElseThrow()
                     .getId();
-        
-            VoteType newVote = VoteType.valueOf(body.get("vote"));
-        
+
+            CommentVote.VoteType newVote = CommentVote.VoteType.valueOf(body.get("vote"));
+
             Comment comment = commentRepository.findById(commentId)
                     .orElseThrow(() -> new RuntimeException("Comment not found"));
-        
-            CommentVote vote = commentVoteRepository
-                    .findByCommentIdAndUserId(commentId, userId)
-                    .orElse(null);
-        
-            if (vote == null) {
-                vote = new CommentVote();
+
+            var existing = commentVoteRepository.findByCommentIdAndUserId(commentId, userId);
+
+            if (existing.isPresent()) {
+                CommentVote vote = existing.get();
+
+                if (vote.getVoteType() == newVote) {
+                    vote.setVoteType(CommentVote.VoteType.NEUTRAL);
+                } else {
+                    vote.setVoteType(newVote);
+                }
+
+                commentVoteRepository.save(vote);
+
+            } else {
+                CommentVote vote = new CommentVote();
                 vote.setComment(comment);
                 vote.setUserId(userId);
-            }
-        
-            // toggle logic
-            if (vote.getVoteType() == newVote) {
-                vote.setVoteType(VoteType.NEUTRAL);
-            } else {
                 vote.setVoteType(newVote);
+
+                commentVoteRepository.save(vote);
             }
-        
-            commentVoteRepository.save(vote);
-        
-            int score = commentVoteRepository.getScoreByCommentId(commentId);
-        
-            return ResponseEntity.ok(Map.of(
-                    "voteType", vote.getVoteType().name(),
-                    "score", score
-            ));
-        
+
+            return ResponseEntity.ok(Map.of("status", "ok"));
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "invalid token"));
