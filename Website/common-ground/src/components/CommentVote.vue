@@ -31,7 +31,7 @@ async function loadVote() {
 
 async function sendVote(type) {
   const res = await fetch(
-    `http://localhost:5000/api/comments/${props.commentId}/vote`,
+    `http://localhost:5000/api/votes`,
     {
       method: "POST",
       headers: {
@@ -39,7 +39,8 @@ async function sendVote(type) {
         Authorization: getToken(),
       },
       body: JSON.stringify({
-        vote: type,
+        commentId: props.commentId,
+        voteType: type,
       }),
     }
   );
@@ -50,10 +51,8 @@ async function sendVote(type) {
 
   vote.value = data.voteType;
 
-  emit("updated", {
-    commentId: props.commentId,
-    score: data.score,
-  });
+  // 🔥 IMPORTANT: no fake score, just tell parent to refresh
+  emit("updated");
 }
 
 onMounted(loadVote);
@@ -69,7 +68,7 @@ onMounted(loadVote);
       ▲
     </button>
 
-    <div>{{ score ?? 0 }}</div>
+    <!-- score removed here: it does NOT belong in this component -->
 
     <button
       class="arrow down"

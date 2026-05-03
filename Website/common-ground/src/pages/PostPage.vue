@@ -55,12 +55,12 @@ async function loadCategories() {
   availableCategories.value = await res.json();
 }
 
-function updateCommentScore(payload) {
-  const comment = comments.value.find((c) => c.id === payload.commentId);
-
-  if (comment) {
-    comment.voteScore = payload.score;
-  }
+/**
+ * 🔥 SINGLE SOURCE OF TRUTH REFRESH
+ * called after every vote change
+ */
+async function refreshAfterVote() {
+  await loadComments();
 }
 
 async function submitComment() {
@@ -83,6 +83,7 @@ async function submitComment() {
 
   newComment.value = "";
   selectedCategories.value = [];
+
   await loadComments();
 }
 
@@ -96,7 +97,6 @@ onMounted(async () => {
 <template>
   <div class="post-page" v-if="post">
 
-    <!-- POST -->
     <h1>{{ post.text }}</h1>
 
     <div class="meta">
@@ -111,14 +111,13 @@ onMounted(async () => {
 
     <hr />
 
-    <!-- COMMENTS -->
     <h2>Comments</h2>
 
     <div v-for="c in comments" :key="c.id" class="comment">
 
       <CommentVote
         :commentId="c.id"
-        @updated="updateCommentScore"
+        @updated="refreshAfterVote"
       />
 
       <div class="comment-body">
@@ -134,13 +133,13 @@ onMounted(async () => {
           </span>
         </div>
 
+        <!-- THIS is now ALWAYS correct because comments are reloaded -->
         <div class="score">
           Score: {{ c.voteScore ?? 0 }}
         </div>
       </div>
     </div>
 
-    <!-- COMMENT FORM -->
     <div v-if="getToken()" class="form">
       <textarea
         v-model="newComment"
@@ -172,7 +171,6 @@ onMounted(async () => {
 
   </div>
 </template>
-
 <style scoped>
 .post-page {
   padding: 1rem;
