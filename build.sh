@@ -23,4 +23,6 @@ echo "$IMAGES"
 
 docker save -o "$OUT_FILE" $IMAGES
 
+cp deploy-compose.yml build/docker-compose.yml
+
 echo "✅ Done: $OUT_FILE"

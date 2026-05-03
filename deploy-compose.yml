@@ -1,7 +1,6 @@
 services:
   db:
     image: postgres:16
-    container_name: pg
     environment:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: secret
@@ -13,31 +12,14 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   api:
-    build:
-      context: ./Backend
-      dockerfile: Dockerfile
     image: common-ground-api
-    container_name: api
     ports:
       - "5000:5000"
-    depends_on:
-      - db
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/appdb
-      SPRING_DATASOURCE_USERNAME: app
-      SPRING_DATASOURCE_PASSWORD: secret
-      SERVER_PORT: 5000
 
   frontend:
-    build:
-      context: ./Website
-      dockerfile: Dockerfile
     image: common-ground-frontend
-    container_name: frontend
     ports:
       - "3000:80"
-    depends_on:
-      - api
 
 volumes:
   pgdata:
