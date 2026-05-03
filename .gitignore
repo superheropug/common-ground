@@ -54,3 +54,5 @@ pnpm-lock.yaml
 .env.staging
 .env.development
 .env.test
+
+build/*
