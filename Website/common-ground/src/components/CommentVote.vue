@@ -54,7 +54,7 @@ onMounted(loadVote);
     >
       ▲
     </button>
-
+    <div>{{ c.voteScore }}</div>
     <button
       class="arrow down"
       :class="{ active: vote === 'NEGATIVE' }"
