@@ -22,3 +22,7 @@ Categories come at varius levels of specificity,
 I'm going to call the backend done.
 
 IF I encounter issues, just go back to it.
+
+
+
+# Common Ground
