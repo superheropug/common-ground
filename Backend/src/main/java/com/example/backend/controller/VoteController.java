@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import com.example.backend.Services.JWTService;
 import com.example.backend.model.Vote;
 import com.example.backend.model.Vote.VoteType;
+import com.example.backend.repository.UserRepository;
 import com.example.backend.repository.VoteRepository;
 
 import io.jsonwebtoken.JwtException;
@@ -18,14 +19,16 @@ import io.jsonwebtoken.JwtException;
 public class VoteController {
 
     private final VoteRepository voteRepository;
+    private final UserRepository userRepo;
 
-    public VoteController(VoteRepository voteRepository) {
+    public VoteController(VoteRepository voteRepository, UserRepository userRepo) {
         this.voteRepository = voteRepository;
+        this.userRepo = userRepo;
     }
 
     public static class VoteRequest {
         public Long commentId;
-        public String voteType; // POSITIVE / NEGATIVE / toggle behavior handled below
+        public String voteType; // POSITIVE / NEGATIVE
     }
 
     private String extractToken(String authorization) {
@@ -47,24 +50,31 @@ public class VoteController {
         try {
             String username = JWTService.getUsernameFromJWT(token);
 
+            Long userId = userRepo.findByUsername(username)
+                    .orElseThrow()
+                    .getId();
+
             VoteType requested = VoteType.valueOf(req.voteType);
 
-            var existing = voteRepository.findByUsernameAndCommentId(username, req.commentId);
+            var existing = voteRepository.findByUserIdAndCommentId(userId, req.commentId);
 
             Vote vote;
 
             if (existing.isPresent()) {
                 vote = existing.get();
 
-                // toggle logic:
+                // toggle logic
                 if (vote.getVoteType() == requested) {
-                    vote.setVoteType(VoteType.NEUTRAL); // clicking same = reset
+                    vote.setVoteType(VoteType.NEUTRAL);
                 } else {
                     vote.setVoteType(requested);
                 }
 
             } else {
-                vote = new Vote(username, req.commentId, requested);
+                vote = new Vote();
+                vote.setUserId(userId);
+                vote.setCommentId(req.commentId);
+                vote.setVoteType(requested);
             }
 
             voteRepository.save(vote);
@@ -83,7 +93,7 @@ public class VoteController {
     @GetMapping("/comment/{commentId}")
     public ResponseEntity<?> getVote(
             @PathVariable Long commentId,
-            @RequestHeader("Authorization") String authorization) {
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
 
         String token = extractToken(authorization);
 
@@ -94,7 +104,11 @@ public class VoteController {
         try {
             String username = JWTService.getUsernameFromJWT(token);
 
-            var vote = voteRepository.findByUsernameAndCommentId(username, commentId);
+            Long userId = userRepo.findByUsername(username)
+                    .orElseThrow()
+                    .getId();
+
+            var vote = voteRepository.findByUserIdAndCommentId(userId, commentId);
 
             return ResponseEntity.ok(Map.of(
                     "voteType",

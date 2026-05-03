@@ -9,7 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-
 @Entity
 @Table(
     name = "COMMENT_VOTES",
@@ -28,7 +27,7 @@ public class Vote {
     private Long id;
 
     @Column(name = "user_id", nullable = false)
-    private String username; // simpler: reuse username (consistent with your Comment model)
+    private Long userId;
 
     @Column(name = "comment_id", nullable = false)
     private Long commentId;
@@ -39,16 +38,16 @@ public class Vote {
 
     public Vote() {}
 
-    public Vote(String username, Long commentId, VoteType voteType) {
-        this.username = username;
+    public Vote(Long userId, Long commentId, VoteType voteType) {
+        this.userId = userId;
         this.commentId = commentId;
         this.voteType = voteType;
     }
 
     public Long getId() { return id; }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public Long getCommentId() { return commentId; }
     public void setCommentId(Long commentId) { this.commentId = commentId; }
