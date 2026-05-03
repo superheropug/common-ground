@@ -25,4 +25,6 @@ docker save -o "$OUT_FILE" $IMAGES
 
 cp deploy-compose.yml build/docker-compose.yml
 
+cp nginx.conf build/nginx.conf
+
 echo "✅ Done: $OUT_FILE"

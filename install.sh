@@ -12,5 +12,6 @@ fi
 echo "📦 Loading Docker images..."
 docker load -i "$FILE"
 cp build/docker-compose.yml docker-compose.yml
+cp build/nginx.conf nginx.conf
 
 echo "✅ Images loaded successfully"

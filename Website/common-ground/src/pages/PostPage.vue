@@ -39,19 +39,19 @@ function handle401(res) {
 }
 
 async function loadPost() {
-  const res = await fetch(`http://localhost:5000/api/posts/${postId}`);
+  const res = await fetch(`/api/api/posts/${postId}`);
   post.value = await res.json();
 }
 
 async function loadComments() {
   const res = await fetch(
-    `http://localhost:5000/api/post/${postId}/comments`
+    `/api/api/post/${postId}/comments`
   );
   comments.value = await res.json();
 }
 
 async function loadCategories() {
-  const res = await fetch("http://localhost:5000/api/categories");
+  const res = await fetch("/api/api/categories");
   availableCategories.value = await res.json();
 }
 
@@ -66,7 +66,7 @@ async function refreshAfterVote() {
 async function submitComment() {
   if (!newComment.value.trim()) return;
 
-  const res = await fetch("http://localhost:5000/api/comments", {
+  const res = await fetch("/api/api/comments", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

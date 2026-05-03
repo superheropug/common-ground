@@ -16,7 +16,7 @@ function formatTime(ts) {
 }
 
 async function loadPosts() {
-  const res = await fetch("http://localhost:5000/api/posts");
+  const res = await fetch("/api/api/posts");
   const data = await res.json();
 
   posts.value = data.content ?? data;

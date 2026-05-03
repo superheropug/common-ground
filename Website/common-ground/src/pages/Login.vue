@@ -25,7 +25,7 @@ async function login() {
   loading.value = true;
 
   try {
-    const res = await axios.post("http://localhost:5000/api/login", {
+    const res = await axios.post("/api/api/login", {
       username: username.value,
       password: password.value,
     });
