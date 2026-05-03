@@ -69,7 +69,6 @@ public class CommentController {
         Long finalUserId = userId;
 
         var safe = comments.stream().map(comment -> {
-
             CommentResponse dto = new CommentResponse();
 
             dto.id = comment.getId();
@@ -77,7 +76,6 @@ public class CommentController {
             dto.postTime = comment.getPostTime();
             dto.categories = comment.getCategories();
 
-            // ✅ FIX: use repository instead of streaming entire table like a maniac
             dto.voteScore = commentVoteRepository.getScoreByCommentId(comment.getId());
 
             if (finalUserId != null) {
@@ -93,6 +91,46 @@ public class CommentController {
         }).toList();
 
         return ResponseEntity.ok(safe);
+    }
+
+    // -----------------------------
+    // CREATE COMMENT (FIX YOU NEEDED)
+    // -----------------------------
+    @PostMapping("/comments")
+    public ResponseEntity<?> createComment(
+            @RequestBody Map<String, Object> body,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = extractToken(authorization);
+
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Authorization required"));
+        }
+
+        try {
+            String username = JWTService.getUsernameFromJWT(token);
+
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow();
+
+            Long postId = Long.valueOf(body.get("postId").toString());
+            String text = body.get("text").toString();
+
+            Comment comment = new Comment();
+            comment.setContent(text);
+            comment.setUsername(user.getUsername()); // adjust if your entity differs
+            comment.setPost(postRepository.findById(postId)
+                    .orElseThrow(() -> new RuntimeException("Post not found")));
+
+            commentRepository.save(comment);
+
+            return ResponseEntity.ok(Map.of("status", "created"));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "invalid request"));
+        }
     }
 
     // -----------------------------
@@ -118,7 +156,8 @@ public class CommentController {
                     .orElseThrow()
                     .getId();
 
-            CommentVote.VoteType newVote = CommentVote.VoteType.valueOf(body.get("vote"));
+            CommentVote.VoteType newVote =
+                    CommentVote.VoteType.valueOf(body.get("vote"));
 
             Comment comment = commentRepository.findById(commentId)
                     .orElseThrow(() -> new RuntimeException("Comment not found"));
@@ -128,11 +167,11 @@ public class CommentController {
             if (existing.isPresent()) {
                 CommentVote vote = existing.get();
 
-                if (vote.getVoteType() == newVote) {
-                    vote.setVoteType(CommentVote.VoteType.NEUTRAL);
-                } else {
-                    vote.setVoteType(newVote);
-                }
+                vote.setVoteType(
+                        vote.getVoteType() == newVote
+                                ? CommentVote.VoteType.NEUTRAL
+                                : newVote
+                );
 
                 commentVoteRepository.save(vote);
 

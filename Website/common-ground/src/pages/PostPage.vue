@@ -68,18 +68,20 @@ function updateCommentScore(payload) {
 async function submitComment() {
   if (!newComment.value.trim()) return;
 
-  const res = await fetch("http://localhost:5000/api/comments", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: getToken(),
-    },
-    body: JSON.stringify({
-      text: newComment.value,
-      postId: postId,
-      categories: selectedCategories.value,
-    }),
-  });
+  const res = await fetch(
+    `http://localhost:5000/api/post/${postId}/comments`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: getToken(),
+      },
+      body: JSON.stringify({
+        text: newComment.value,
+        categories: selectedCategories.value,
+      }),
+    }
+  );
 
   if (handle401(res)) return;
 
@@ -98,7 +100,6 @@ onMounted(async () => {
 <template>
   <div class="post-page" v-if="post">
 
-    <!-- POST -->
     <h1>{{ post.text }}</h1>
 
     <div class="meta">
@@ -113,18 +114,15 @@ onMounted(async () => {
 
     <hr />
 
-    <!-- COMMENTS -->
     <h2>Comments</h2>
 
     <div v-for="c in comments" :key="c.id" class="comment">
 
-      <!-- VOTE -->
       <CommentVote
         :commentId="c.id"
         @updated="updateCommentScore"
       />
 
-      <!-- CONTENT -->
       <div class="comment-body">
         <div class="meta">
           {{ formatTime(c.postTime) }}
@@ -144,7 +142,6 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- COMMENT FORM -->
     <div v-if="getToken()" class="form">
       <textarea
         v-model="newComment"
