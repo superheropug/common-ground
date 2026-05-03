@@ -6,20 +6,18 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.backend.Services.JWTService;
 import com.example.backend.model.Category;
 import com.example.backend.model.Comment;
 import com.example.backend.model.CommentRequest;
+import com.example.backend.model.CommentResponse;
+import com.example.backend.model.CommentVote;
 import com.example.backend.repository.CommentRepository;
+import com.example.backend.repository.CommentVoteRepository;
 import com.example.backend.repository.PostRepository;
+import com.example.backend.repository.UserRepository;
 
 import io.jsonwebtoken.JwtException;
 
@@ -29,11 +27,17 @@ public class CommentController {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final CommentVoteRepository commentVoteRepository;
+    private final UserRepository userRepository;
 
     public CommentController(CommentRepository commentRepository,
-                             PostRepository postRepository) {
+                             PostRepository postRepository,
+                             CommentVoteRepository commentVoteRepository,
+                             UserRepository userRepository) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
+        this.commentVoteRepository = commentVoteRepository;
+        this.userRepository = userRepository;
     }
 
     private String extractToken(String authorization) {
@@ -41,67 +45,60 @@ public class CommentController {
     }
 
     // -----------------------------
-    // GET ALL COMMENTS (SAFE COPY)
-    // -----------------------------
-    @GetMapping("/comments")
-    public ResponseEntity<?> getAllComments(
-            @RequestHeader(value = "Authorization", required = false) String authorization) {
-
-        String token = extractToken(authorization);
-
-        if (token == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Authorization required"));
-        }
-
-        try {
-            JWTService.getUsernameFromJWT(token);
-
-            var comments = commentRepository.findAll();
-            comments.sort((a, b) -> b.getPostTime().compareTo(a.getPostTime()));
-
-            var safeComments = comments.stream().map(comment -> {
-                Comment copy = new Comment();
-                copy.setId(comment.getId());
-                copy.setContent(comment.getContent());
-                copy.setPostTime(comment.getPostTime());
-                copy.setCategories(comment.getCategories());
-
-                copy.setUsername(null);
-                copy.setPost(null);
-
-                return copy;
-            }).toList();
-
-            return ResponseEntity.ok(safeComments);
-
-        } catch (JwtException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "invalid token"));
-        }
-    }
-
-    // -----------------------------
-    // GET COMMENTS BY POST ID
-    // (NO AUTH REQUIRED — LEFT AS IS)
+    // GET COMMENTS BY POST
     // -----------------------------
     @GetMapping("/post/{postId}/comments")
-    public ResponseEntity<?> getCommentsByPostId(@PathVariable Long postId) {
+    public ResponseEntity<?> getCommentsByPostId(
+            @PathVariable Long postId,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
 
         var comments = commentRepository.findByPostId(postId);
 
-        var safe = comments.stream().map(comment -> {
-            Comment copy = new Comment();
-            copy.setId(comment.getId());
-            copy.setContent(comment.getContent());
-            copy.setPostTime(comment.getPostTime());
-            copy.setCategories(comment.getCategories());
-            copy.setUsername(null);
-            copy.setPost(null);
-            return copy;
+        Long userId = null;
+
+        if (authorization != null) {
+            try {
+                String username = JWTService.getUsernameFromJWT(authorization);
+                userId = userRepository.findByUsername(username)
+                        .map(u -> u.getId())
+                        .orElse(null);
+            } catch (Exception ignored) {}
+        }
+
+        Long finalUserId = userId;
+
+        var response = comments.stream().map(comment -> {
+
+            CommentResponse dto = new CommentResponse();
+
+            dto.id = comment.getId();
+            dto.content = comment.getContent();
+            dto.postTime = comment.getPostTime();
+            dto.categories = comment.getCategories();
+            dto.username = null;
+
+            // -----------------------------
+            // SCORE (CLEAN DB QUERY)
+            // -----------------------------
+            dto.voteScore =
+                    commentVoteRepository.getScoreByCommentId(comment.getId());
+
+            // -----------------------------
+            // USER VOTE STATE
+            // -----------------------------
+            if (finalUserId != null) {
+                dto.userVote = commentVoteRepository
+                        .findByCommentIdAndUserId(comment.getId(), finalUserId)
+                        .map(v -> v.getVoteType().name())
+                        .orElse("NEUTRAL");
+            } else {
+                dto.userVote = "NEUTRAL";
+            }
+
+            return dto;
         }).toList();
 
-        return ResponseEntity.ok(safe);
+        return ResponseEntity.ok(response);
     }
 
     // -----------------------------
@@ -141,17 +138,70 @@ public class CommentController {
 
             Comment saved = commentRepository.save(comment);
 
-            Comment response = new Comment();
-            response.setId(saved.getId());
-            response.setContent(saved.getContent());
-            response.setPostTime(saved.getPostTime());
-            response.setCategories(saved.getCategories());
-            response.setUsername(null);
-            response.setPost(null);
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
 
         } catch (JwtException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "invalid token"));
+        }
+    }
+
+    // -----------------------------
+    // VOTE COMMENT
+    // -----------------------------
+    @PostMapping("/comments/{commentId}/vote")
+    public ResponseEntity<?> voteComment(
+            @PathVariable Long commentId,
+            @RequestBody Map<String, String> body,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = extractToken(authorization);
+
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Authorization required"));
+        }
+
+        try {
+            String username = JWTService.getUsernameFromJWT(token);
+
+            Long userId = userRepository.findByUsername(username)
+                    .orElseThrow()
+                    .getId();
+
+            CommentVote.VoteType newVote =
+                    CommentVote.VoteType.valueOf(body.get("vote"));
+
+            Comment comment = commentRepository.findById(commentId)
+                    .orElseThrow(() -> new RuntimeException("Comment not found"));
+
+            var existingOpt =
+                    commentVoteRepository.findByCommentIdAndUserId(commentId, userId);
+
+            if (existingOpt.isPresent()) {
+
+                CommentVote existing = existingOpt.get();
+
+                if (existing.getVoteType() == newVote) {
+                    existing.setVoteType(CommentVote.VoteType.NEUTRAL);
+                } else {
+                    existing.setVoteType(newVote);
+                }
+
+                commentVoteRepository.save(existing);
+
+            } else {
+                CommentVote vote = new CommentVote();
+                vote.setComment(comment);
+                vote.setUserId(userId);
+                vote.setVoteType(newVote);
+
+                commentVoteRepository.save(vote);
+            }
+
+            return ResponseEntity.ok(Map.of("status", "ok"));
+
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "invalid token"));
         }
