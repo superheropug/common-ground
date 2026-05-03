@@ -1,8 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 html, body, #app {
   margin: 0;
   padding: 0;
   height: 100%;
   background: #0f0f0f;
+  font-family: Inter, system-ui, sans-serif;
 }
 .arrow.active {
   opacity: 1;

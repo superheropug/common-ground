@@ -26,7 +26,9 @@ onMounted(() => {
   <div class="app" :key="authTick">
     <nav class="nav">
       <div class="left">
-        <router-link to="/" class="logo">Common Ground</router-link>
+        <router-link to="/" class="logo">
+          <img src="/common-ground-wide.svg" alt="Common Ground" />
+        </router-link>
       </div>
 
       <div class="right">
@@ -58,7 +60,6 @@ onMounted(() => {
 
 <style scoped>
 .app {
-  font-family: Arial, sans-serif;
   background: #0f0f0f;
   color: #eee;
   min-height: 100vh;
@@ -67,26 +68,27 @@ onMounted(() => {
 .nav {
   display: flex;
   justify-content: space-between;
-  padding: 1rem 2rem;
+  padding: 0.1rem 2rem;
   background: #1a1a1a;
   border-bottom: 1px solid #333;
 }
 
-.nav a {
+.nav a, nav button {
   margin-right: 1rem;
   text-decoration: none;
   color: #ccc;
+  line-height: 1;
 }
 
 .nav a:hover {
   color: white;
 }
 
-.logo {
-  font-weight: bold;
-  color: #4cafef;
+.logo img {
+  height: 64px;
+  width: auto;
+  display: block;
 }
-
 button {
   background: #333;
   color: white;

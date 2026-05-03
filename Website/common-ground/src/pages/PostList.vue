@@ -31,7 +31,7 @@ onMounted(loadPosts);
 
 <template>
   <div class="list">
-    <h1>Common Ground</h1>
+    <h1>Recent Asks</h1>
 
     <div v-for="post in posts" :key="post.id" class="post" @click="openPost(post.id)">
       <div class="meta">
