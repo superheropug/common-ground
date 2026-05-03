@@ -1,0 +1,90 @@
+## Spring Boot
+
+# Build files
+/*.iml
+/*.idea
+
+# Logs
+logs/
+
+# OS X
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# IDEs
+*.swp
+*.swo
+
+# Spring Boot
+
+# Build files
+/build
+
+# Logs
+logs/
+
+# IDEs
+*.idea
+*.iml
+
+# User-specific
+*.user
+
+# Maven
+
+# Build files
+/target
+
+# IDEs
+*.idea
+
+# Other
+
+# Environment variables
+.env
+
+# Temporary files
+*~
+
+# IntelliJ
+
+# Cache
+.cache
+
+# Coverage
+coverage/
+
+# Test reports
+test-results/
+
+# Spring Boot application
+
+# Build files
+/build
+
+# Logs
+logs/
+
+# IDEs
+*.idea
+
+# Other
+
+# Environment variables
+.env
+
+# Temporary files
+*~
+
+# IntelliJ
+
+# Cache
+.cache
+
+# Coverage
+coverage/
+
+# Test reports
+test-results/
