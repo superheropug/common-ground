@@ -1,28 +1,31 @@
 <script setup>
-import { computed } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-
-function getToken() {
-  return localStorage.getItem("token");
-}
-
-function clearToken() {
-  localStorage.removeItem("token");
-}
 
 const router = useRouter();
 
-const isLoggedIn = computed(() => !!getToken());
+const isLoggedIn = ref(false);
+
+function syncAuth() {
+  isLoggedIn.value = !!localStorage.getItem("token");
+}
 
 function logout() {
-  clearToken();
+  localStorage.removeItem("token");
+  syncAuth();
   router.push("/");
 }
+
+onMounted(() => {
+  syncAuth();
+
+  // keeps login state synced across tabs/windows
+  window.addEventListener("storage", syncAuth);
+});
 </script>
 
 <template>
   <div class="app">
-    <!-- NAVBAR -->
     <nav class="nav">
       <div class="left">
         <router-link to="/" class="logo">Common Ground</router-link>
@@ -45,7 +48,6 @@ function logout() {
       </div>
     </nav>
 
-    <!-- PAGE CONTENT -->
     <main class="content">
       <router-view />
     </main>
