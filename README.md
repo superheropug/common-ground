@@ -1,28 +1,23 @@
-The concept:
-
-Q-and-A platform focused on specific acessibilty concerns. Users don't post as "users" they post as "disabilities" like post from :"Limited Mobility" where you ask about how to get to Carver Hall. Kinda like Stack Overflow for disabilities, but hopefully without the Stack OVerflow community.
-
-You do need an account to post, but only the poster can tell who posted it. (how do this?) This is how we limit access to only students
-
-Slide Deck/Live Demo
-
-Planned Stack:
-Website : Allow users to log in, and see their posts. Allow unauthenticated users to see questions. Allow users with accounts to reply and vote.
-
-Backend: Require auth token, which expires after an hour.
-
-Doesn't directly solve an acessibilty problem in and of itself, but DOES enable people to solve those problems for each other.
-
-Name:
-
-Common Ground (about navigating shared environments and spaces with knowledge from others.)
-
-Categories come at varius levels of specificity,
-
-I'm going to call the backend done.
-
-IF I encounter issues, just go back to it.
-
-
 
 # Common Ground
+
+HOW TO USE THIS SOFTWARE:
+
+Common Ground is a acessibility Q/A platform designed for shared experiences and understanding.
+
+If you recieved/downloaded this as a singleton, you likely only have this file, a folder named build, and a couple .sh scripts.
+The build folder contains all of the files you need to run this as a singleton on any machine with Docker installed. 
+
+There are 4 scripts you need to be familair with.
+
+1. install.sh: Unpacks the contents of the build folder into your Docker repository, and also pulls out a few files it needs for operation.
+2. run.sh: Once installed, this will start the Docker Compose project, including the outward facing Nginx layer, the web service, the database, and the Spring backend.
+3. stop.sh: This stops the running Docker Compose project.
+4. clean.sh: This cleans up the installed container images, but does NOT remove the files in this folder it created. After running clean, it is safe to delete the folder this came from, this is necessary for updates.
+
+To Install:
+
+* Configure Docker for your machine
+* Copy the contents of the common-ground folder off of the disc or drive.
+* Grant execute permissions to install.sh
+* Run install.sh
