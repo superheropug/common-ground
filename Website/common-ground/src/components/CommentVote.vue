@@ -15,7 +15,7 @@ function getToken() {
 
 async function loadVote() {
   const res = await fetch(
-    `/api/api/votes/comment/${props.commentId}`,
+    `/api/votes/comment/${props.commentId}`,
     {
       headers: {
         Authorization: getToken(),
@@ -31,7 +31,7 @@ async function loadVote() {
 
 async function sendVote(type) {
   const res = await fetch(
-    `/api/api/votes`,
+    `/api/votes`,
     {
       method: "POST",
       headers: {

@@ -12,7 +12,7 @@ import com.example.backend.model.Category;
 import com.example.backend.repository.CategoryRepository;
 
 @RestController
-@RequestMapping("/api/categories")
+@RequestMapping("/categories")
 public class CategoryController {
 
     private final CategoryRepository categoryRepository;

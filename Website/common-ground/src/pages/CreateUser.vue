@@ -24,7 +24,7 @@ async function register() {
   message.value = "";
 
   try {
-    const res = await fetch("/api/api/users", {
+    const res = await fetch("/api/users", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

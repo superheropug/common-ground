@@ -29,7 +29,7 @@ import com.example.backend.repository.PostRepository;
 import io.jsonwebtoken.JwtException;
 
 @RestController
-@RequestMapping("/api/posts")
+@RequestMapping("/posts")
 public class PostController {
 
     private final PostRepository postRepository;

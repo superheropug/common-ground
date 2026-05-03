@@ -19,7 +19,7 @@ function getToken() {
 // fetch categories from backend
 async function loadCategories() {
   try {
-    const res = await axios.get("/api/api/categories");
+    const res = await axios.get("/api/categories");
     availableCategories.value = res.data;
   } catch (err) {
     console.error("Failed to load categories", err);
@@ -53,7 +53,7 @@ async function submit() {
     }
 
     await axios.post(
-      "/api/api/posts",
+      "/api/posts",
       {
         text: text.value,
         categories: selectedCategories.value,

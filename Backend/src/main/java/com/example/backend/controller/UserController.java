@@ -24,7 +24,6 @@ import com.example.backend.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
 
 @RestController
-@RequestMapping("/api")
 public class UserController {
 
     private final UserRepository userRepository;

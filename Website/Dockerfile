@@ -7,7 +7,6 @@ COPY common-ground/package*.json ./
 RUN npm install
 
 COPY common-ground/ .
-
 RUN npm run build
 
 

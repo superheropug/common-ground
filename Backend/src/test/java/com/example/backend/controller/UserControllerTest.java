@@ -47,7 +47,7 @@ public class UserControllerTest {
         when(userRepository.findByUsername("alice")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        mvc.perform(post("/api/users")
+        mvc.perform(post("/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"username\":\"alice\",\"password\":\"pw\"}"))
                 .andExpect(status().isCreated())

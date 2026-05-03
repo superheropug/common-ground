@@ -23,7 +23,6 @@ import com.example.backend.repository.PostRepository;
 import com.example.backend.repository.UserRepository;
 
 @RestController
-@RequestMapping("/api")
 public class CommentController {
 
     private final CommentRepository commentRepository;

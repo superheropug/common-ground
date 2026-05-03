@@ -15,7 +15,7 @@ import com.example.backend.repository.VoteRepository;
 import io.jsonwebtoken.JwtException;
 
 @RestController
-@RequestMapping("/api/votes")
+@RequestMapping("/votes")
 public class VoteController {
 
     private final VoteRepository voteRepository;

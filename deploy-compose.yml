@@ -8,18 +8,29 @@ services:
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: appdb
     volumes:
-      - ./database.sql:/docker-entrypoint-initdb.d/schema.sql:ro
       - pgdata:/var/lib/postgresql/data
+      - ./database.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     networks:
       - appnet
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   api:
     image: common-ground-api
     expose:
       - "5000"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/appdb
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: secret
+      server.servlet.context-path: /
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - appnet
     restart: unless-stopped
@@ -27,9 +38,7 @@ services:
   frontend:
     image: common-ground-frontend
     expose:
-      - "3000"
-    depends_on:
-      - api
+      - "80"
     networks:
       - appnet
     restart: unless-stopped
