@@ -109,7 +109,11 @@ onMounted(async () => {
     <div v-for="c in comments" :key="c.id" class="comment">
 
       <!-- VOTE COLUMN -->
-      <CommentVote :commentId="c.id" />
+      <CommentVote
+        :commentId="c.id"
+        :modelValue="c"
+        @refresh="loadComments"
+      />
 
       <!-- CONTENT -->
       <div class="comment-body">

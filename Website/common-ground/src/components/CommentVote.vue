@@ -1,9 +1,12 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, watch } from "vue";
 
 const props = defineProps({
   commentId: Number,
+  modelValue: Object, // { voteScore, userVote }
 });
+
+const emit = defineEmits(["refresh"]);
 
 const vote = ref("NEUTRAL");
 
@@ -11,38 +14,39 @@ function getToken() {
   return localStorage.getItem("token");
 }
 
-async function loadVote() {
+// sync from parent
+watch(
+  () => props.modelValue,
+  (val) => {
+    if (val?.userVote) {
+      vote.value = val.userVote;
+    }
+  },
+  { immediate: true }
+);
+
+async function sendVote(type) {
   const res = await fetch(
-    `http://localhost:5000/api/votes/comment/${props.commentId}`,
+    `http://localhost:5000/api/comments/${props.commentId}/vote`,
     {
+      method: "POST",
       headers: {
+        "Content-Type": "application/json",
         Authorization: getToken(),
       },
+      body: JSON.stringify({
+        vote: type,
+      }),
     }
   );
 
-  const data = await res.json();
-  vote.value = data.voteType;
-}
-
-async function sendVote(type) {
-  const res = await fetch("http://localhost:5000/api/votes", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: getToken(),
-    },
-    body: JSON.stringify({
-      commentId: props.commentId,
-      voteType: type,
-    }),
-  });
+  if (res.status === 401) return;
 
   const data = await res.json();
-  vote.value = data.voteType;
-}
 
-onMounted(loadVote);
+  // simplest correct approach: refresh parent comments
+  emit("refresh");
+}
 </script>
 
 <template>
@@ -54,7 +58,11 @@ onMounted(loadVote);
     >
       ▲
     </button>
-    <div>{{ c.voteScore }}</div>
+
+    <div class="score">
+      {{ modelValue?.voteScore ?? 0 }}
+    </div>
+
     <button
       class="arrow down"
       :class="{ active: vote === 'NEGATIVE' }"
@@ -88,5 +96,10 @@ onMounted(loadVote);
 
 .arrow.active {
   color: white;
+}
+
+.score {
+  font-size: 0.85rem;
+  margin: 0.2rem 0;
 }
 </style>
