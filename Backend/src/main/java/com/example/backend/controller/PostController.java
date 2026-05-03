@@ -54,7 +54,7 @@ public class PostController {
             @RequestParam(name = "size", defaultValue = "50") int size) {
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Post> posts = postRepository.findAll(pageable);
+        Page<Post> posts = postRepository.findAllByOrderByPostTimeDesc(pageable);
 
         var safePosts = posts.map(post -> {
             Post copy = new Post();

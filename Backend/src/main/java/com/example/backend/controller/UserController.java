@@ -135,7 +135,7 @@ public class UserController {
         try {
             JWTService.getUsernameFromJWT(token);
 
-            Page<Post> posts = postRepository.findAll(PageRequest.of(0, 50));
+            Page<Post> posts = postRepository.findAllByOrderByPostTimeDesc(PageRequest.of(0, 50));
 
             var safePosts = posts.map(post -> {
                 Post copy = new Post();

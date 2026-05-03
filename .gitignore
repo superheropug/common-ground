@@ -1,0 +1,56 @@
+# Logs
+logs/
+*.log
+*.log.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+*.idea
+*.vscode
+*.swp
+*.swo
+*.swn
+*.sublime
+*.sublime-workspace
+*.project
+*.pydevproject
+*.metadata
+*.classpath
+*.settings
+*.gradle
+*.iml
+*.ipr
+*.iws
+*.lock
+*.cache
+*.tmp
+*.bak
+*.old
+*.backup
+*.orig
+*.rej
+*.patch
+*.diff
+*.patch
+*.rej
+*.orig
+*.backup
+
+# Build files
+dist/
+build/
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Vue/Vite specific
+.env
+.env.local
+.env.prod
+.env.staging
+.env.development
+.env.test
