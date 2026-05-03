@@ -1,31 +1,29 @@
 <script setup>
-import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { isLoggedIn, clearToken, syncAuth } from "./auth";
+import { ref, onMounted } from "vue";
 
 const router = useRouter();
 
-const isLoggedIn = ref(false);
-
-function syncAuth() {
-  isLoggedIn.value = !!localStorage.getItem("token");
-}
+// dummy reactive trigger so Vue actually re-renders on auth changes
+const authTick = ref(0);
 
 function logout() {
-  localStorage.removeItem("token");
-  syncAuth();
+  clearToken();
+  authTick.value++;
   router.push("/");
 }
 
 onMounted(() => {
-  syncAuth();
-
-  // keeps login state synced across tabs/windows
-  window.addEventListener("storage", syncAuth);
+  window.addEventListener("storage", () => {
+    syncAuth();
+    authTick.value++;
+  });
 });
 </script>
 
 <template>
-  <div class="app">
+  <div class="app" :key="authTick">
     <nav class="nav">
       <div class="left">
         <router-link to="/" class="logo">Common Ground</router-link>
@@ -34,15 +32,19 @@ onMounted(() => {
       <div class="right">
         <router-link to="/">Posts</router-link>
 
-        <router-link v-if="isLoggedIn" to="/create">
+        <router-link v-if="isLoggedIn()" to="/create">
           Create Post
         </router-link>
 
-        <router-link v-if="!isLoggedIn" to="/login">
+        <router-link v-if="!isLoggedIn()" to="/login">
           Login
         </router-link>
 
-        <button v-if="isLoggedIn" @click="logout">
+        <router-link v-if="!isLoggedIn()" to="/register">
+          Create User
+        </router-link>
+
+        <button v-if="isLoggedIn()" @click="logout">
           Logout
         </button>
       </div>
