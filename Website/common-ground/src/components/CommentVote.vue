@@ -1,12 +1,11 @@
 <script setup>
-import { ref, watch } from "vue";
+import { ref, onMounted } from "vue";
 
 const props = defineProps({
   commentId: Number,
-  modelValue: Object, // { voteScore, userVote }
 });
 
-const emit = defineEmits(["refresh"]);
+const emit = defineEmits(["updated"]);
 
 const vote = ref("NEUTRAL");
 
@@ -14,16 +13,21 @@ function getToken() {
   return localStorage.getItem("token");
 }
 
-// sync from parent
-watch(
-  () => props.modelValue,
-  (val) => {
-    if (val?.userVote) {
-      vote.value = val.userVote;
+async function loadVote() {
+  const res = await fetch(
+    `http://localhost:5000/api/votes/comment/${props.commentId}`,
+    {
+      headers: {
+        Authorization: getToken(),
+      },
     }
-  },
-  { immediate: true }
-);
+  );
+
+  if (!res.ok) return;
+
+  const data = await res.json();
+  vote.value = data.voteType ?? "NEUTRAL";
+}
 
 async function sendVote(type) {
   const res = await fetch(
@@ -40,13 +44,19 @@ async function sendVote(type) {
     }
   );
 
-  if (res.status === 401) return;
+  if (!res.ok) return;
 
   const data = await res.json();
 
-  // simplest correct approach: refresh parent comments
-  emit("refresh");
+  vote.value = data.voteType;
+
+  emit("updated", {
+    commentId: props.commentId,
+    score: data.score,
+  });
 }
+
+onMounted(loadVote);
 </script>
 
 <template>
@@ -59,9 +69,7 @@ async function sendVote(type) {
       ▲
     </button>
 
-    <div class="score">
-      {{ modelValue?.voteScore ?? 0 }}
-    </div>
+    <div>{{ score ?? 0 }}</div>
 
     <button
       class="arrow down"
@@ -84,22 +92,26 @@ async function sendVote(type) {
 .arrow {
   background: transparent;
   border: none;
-  color: black;
   font-size: 18px;
   cursor: pointer;
-  opacity: 0.8;
+  opacity: 0.6;
+  color: #aaa;
 }
 
 .arrow:hover {
   opacity: 1;
+  color: #fff;
 }
 
 .arrow.active {
-  color: white;
+  opacity: 1;
 }
 
-.score {
-  font-size: 0.85rem;
-  margin: 0.2rem 0;
+.arrow.up.active {
+  color: #4ade80;
+}
+
+.arrow.down.active {
+  color: #f87171;
 }
 </style>

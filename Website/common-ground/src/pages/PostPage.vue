@@ -55,6 +55,16 @@ async function loadCategories() {
   availableCategories.value = await res.json();
 }
 
+function updateCommentScore(payload) {
+  const comment = comments.value.find(
+    (c) => c.id === payload.commentId
+  );
+
+  if (comment) {
+    comment.voteScore = payload.score;
+  }
+}
+
 async function submitComment() {
   if (!newComment.value.trim()) return;
 
@@ -108,11 +118,10 @@ onMounted(async () => {
 
     <div v-for="c in comments" :key="c.id" class="comment">
 
-      <!-- VOTE COLUMN -->
+      <!-- VOTE -->
       <CommentVote
         :commentId="c.id"
-        :modelValue="c"
-        @refresh="loadComments"
+        @updated="updateCommentScore"
       />
 
       <!-- CONTENT -->
@@ -127,6 +136,10 @@ onMounted(async () => {
           <span v-for="cat in c.categories" :key="cat.name" class="chip">
             {{ cat.fancyName || cat.name }}
           </span>
+        </div>
+
+        <div class="score">
+          Score: {{ c.voteScore ?? 0 }}
         </div>
       </div>
     </div>
@@ -203,6 +216,12 @@ onMounted(async () => {
 
 .text {
   margin: 0.3rem 0;
+}
+
+.score {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  opacity: 0.7;
 }
 
 .form {

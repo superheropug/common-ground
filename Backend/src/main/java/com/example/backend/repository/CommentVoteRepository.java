@@ -11,12 +11,13 @@ import com.example.backend.model.CommentVote;
 public interface CommentVoteRepository extends JpaRepository<CommentVote, Long> {
 
     Optional<CommentVote> findByCommentIdAndUserId(Long commentId, Long userId);
+
     @Query("""
         SELECT COALESCE(
             SUM(
                 CASE v.voteType
-                    WHEN 'POSITIVE' THEN 1
-                    WHEN 'NEGATIVE' THEN -1
+                    WHEN com.example.backend.model.CommentVote.VoteType.POSITIVE THEN 1
+                    WHEN com.example.backend.model.CommentVote.VoteType.NEGATIVE THEN -1
                     ELSE 0
                 END
             ), 0

@@ -6,7 +6,13 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.example.backend.Services.JWTService;
 import com.example.backend.model.Category;
@@ -14,6 +20,7 @@ import com.example.backend.model.Comment;
 import com.example.backend.model.CommentRequest;
 import com.example.backend.model.CommentResponse;
 import com.example.backend.model.CommentVote;
+import com.example.backend.model.CommentVote.VoteType;
 import com.example.backend.repository.CommentRepository;
 import com.example.backend.repository.CommentVoteRepository;
 import com.example.backend.repository.PostRepository;
@@ -154,53 +161,52 @@ public class CommentController {
             @PathVariable Long commentId,
             @RequestBody Map<String, String> body,
             @RequestHeader("Authorization") String authorization) {
-
+            
         String token = extractToken(authorization);
-
+            
         if (token == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Authorization required"));
         }
-
+    
         try {
             String username = JWTService.getUsernameFromJWT(token);
-
+        
             Long userId = userRepository.findByUsername(username)
                     .orElseThrow()
                     .getId();
-
-            CommentVote.VoteType newVote =
-                    CommentVote.VoteType.valueOf(body.get("vote"));
-
+        
+            VoteType newVote = VoteType.valueOf(body.get("vote"));
+        
             Comment comment = commentRepository.findById(commentId)
                     .orElseThrow(() -> new RuntimeException("Comment not found"));
-
-            var existingOpt =
-                    commentVoteRepository.findByCommentIdAndUserId(commentId, userId);
-
-            if (existingOpt.isPresent()) {
-
-                CommentVote existing = existingOpt.get();
-
-                if (existing.getVoteType() == newVote) {
-                    existing.setVoteType(CommentVote.VoteType.NEUTRAL);
-                } else {
-                    existing.setVoteType(newVote);
-                }
-
-                commentVoteRepository.save(existing);
-
-            } else {
-                CommentVote vote = new CommentVote();
+        
+            CommentVote vote = commentVoteRepository
+                    .findByCommentIdAndUserId(commentId, userId)
+                    .orElse(null);
+        
+            if (vote == null) {
+                vote = new CommentVote();
                 vote.setComment(comment);
                 vote.setUserId(userId);
-                vote.setVoteType(newVote);
-
-                commentVoteRepository.save(vote);
             }
-
-            return ResponseEntity.ok(Map.of("status", "ok"));
-
+        
+            // toggle logic
+            if (vote.getVoteType() == newVote) {
+                vote.setVoteType(VoteType.NEUTRAL);
+            } else {
+                vote.setVoteType(newVote);
+            }
+        
+            commentVoteRepository.save(vote);
+        
+            int score = commentVoteRepository.getScoreByCommentId(commentId);
+        
+            return ResponseEntity.ok(Map.of(
+                    "voteType", vote.getVoteType().name(),
+                    "score", score
+            ));
+        
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "invalid token"));
