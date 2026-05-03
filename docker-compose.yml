@@ -22,6 +22,9 @@ services:
   api:
     build:
       context: ./Backend
+      tags:
+        - common-ground-api:latest
+    image: common-ground-api:latest
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/appdb
       SPRING_DATASOURCE_USERNAME: app
@@ -38,6 +41,9 @@ services:
   frontend:
     build:
       context: ./Website
+      tags:
+        - common-ground-frontend:latest
+    image: common-ground-frontend:latest
     expose:
       - "80"
     networks:
