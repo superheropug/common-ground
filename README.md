@@ -3,7 +3,7 @@
 
 HOW TO USE THIS SOFTWARE:
 
-Common Ground is a acessibility Q/A platform designed for shared experiences and understanding.
+Common Ground is a acessibility QnA platform designed for shared experiences and understanding.
 
 If you recieved/downloaded this as a singleton, you likely only have this file, a folder named build, and a couple .sh scripts.
 The build folder contains all of the files you need to run this as a singleton on any machine with Docker installed. 
