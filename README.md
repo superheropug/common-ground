@@ -21,3 +21,7 @@ To Install:
 * Copy the contents of the common-ground folder off of the disc or drive.
 * Grant execute permissions to install.sh
 * Run install.sh
+
+To Build
+* Build each sub-component, running npm run dev and mvn clean package in the Website/common-ground and Backend folders respectively
+* Run build.sh
